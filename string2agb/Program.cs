@@ -40,9 +40,15 @@ namespace string2agb
                 string[] inputlines = File.ReadAllLines(parsedOptions.Input, System.Text.Encoding.Default);
                 StreamWriter outWriter = new StreamWriter(parsedOptions.Output, parsedOptions.Append);
                 if (outWriter.BaseStream.Length == 0)
+                {
+                    printHead(parsedOptions, outWriter);
                     outWriter.WriteLine(".text");
+                }
                 else
+                {
                     outWriter.WriteLine();
+                    printHead(parsedOptions, outWriter);
+                }
                 outWriter.WriteLine(".align 2");
                 foreach (string line in inputlines)
                 {
@@ -80,11 +86,43 @@ namespace string2agb
                         if (hexMatch != null)
                             strings.Add("0x" + hexMatch.Groups[1]);
                     }
+                    //Create reference symbol for use with GCC compiler
                     outWriter.WriteLine(string.Join(",", strings));
+                    outWriter.WriteLine();
+                    outWriter.WriteLine(".global " + symbol + "_ref");
+                    outWriter.WriteLine(symbol + "_ref:");
+                    outWriter.WriteLine(".word " + symbol);
                 }
                 outWriter.Flush();
                 outWriter.Close();
             }
+        }
+
+        static void printHead(Options opt, StreamWriter write)
+        {
+            string fileLine = "result of file \"" + opt.Input + "\"";
+            string tableLine = "using table \"" + opt.TablePath + "\"";
+            string string2agbLine = "converted using string2agb";
+            int maxLen = Math.Max(Math.Max(fileLine.Length, string2agbLine.Length), tableLine.Length);
+            maxLen += 20;
+            write.WriteLine(new string('@', maxLen));
+            write.WriteLine("@" + new string(' ', maxLen - 2) + "@");
+
+            write.Write("@" + new string(' ', (maxLen - fileLine.Length - 2) / 2));
+            write.Write(fileLine + new string(' ', (int)Math.Ceiling((decimal)(maxLen - fileLine.Length - 2) / 2)));
+            write.WriteLine("@");
+
+            write.Write("@" + new string(' ', (maxLen - tableLine.Length - 2) / 2));
+            write.Write(tableLine + new string(' ', (int)Math.Ceiling((decimal)(maxLen - tableLine.Length - 2) / 2)));
+            write.WriteLine("@");
+
+            write.Write("@" + new string(' ', (maxLen - string2agbLine.Length - 2) / 2));
+            write.Write(string2agbLine + new string(' ', (int)Math.Ceiling((decimal)(maxLen - string2agbLine.Length - 2) / 2)));
+            write.WriteLine("@");
+
+            write.WriteLine("@" + new string(' ', maxLen - 2) + "@");
+            write.WriteLine(new string('@', maxLen));
+            write.WriteLine();
         }
     }
 
