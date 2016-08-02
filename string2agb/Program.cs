@@ -8,7 +8,7 @@ namespace string2agb
 {
     class Program
     {
-        const string REGEX = @"^([\s\S]+)=0[xX]([0-9a-fA-F]{1,2})$";
+        const string REGEX = @"^([\s\S]+)=(?:0[xX]){0,1}([0-9a-fA-F]{1,2})$";
         const string REGEX_CON = @"^([\s\S]+)=([\s\S]+)$";
         const string REGEX_HEX = @"^(?:0[xX]){0,1}([0-9a-fA-F]{1,2})$";
         static Dictionary<string, byte> _lookup = new Dictionary<string, byte>();
@@ -41,15 +41,16 @@ namespace string2agb
                 StreamWriter outWriter = new StreamWriter(parsedOptions.Output, parsedOptions.Append);
                 if (outWriter.BaseStream.Length == 0)
                 {
-                    printHead(parsedOptions, outWriter);
+                    PrintHead(parsedOptions, outWriter);
                     outWriter.WriteLine(".text");
                 }
                 else
                 {
                     outWriter.WriteLine();
-                    printHead(parsedOptions, outWriter);
+                    PrintHead(parsedOptions, outWriter);
                 }
                 outWriter.WriteLine(".align 2");
+                List<string> symList = new List<string>();
                 foreach (string line in inputlines)
                 {
                     outWriter.WriteLine();
@@ -60,6 +61,7 @@ namespace string2agb
                         return;
                     }
                     string symbol = m.Groups[1].ToString();
+                    symList.Add(symbol);
                     string text = m.Groups[2].ToString();
                     outWriter.WriteLine(".global " + symbol);
                     outWriter.WriteLine(symbol + ":");
@@ -88,23 +90,34 @@ namespace string2agb
                     }
                     //Create reference symbol for use with GCC compiler
                     outWriter.WriteLine(string.Join(",", strings));
+                }
+                outWriter.WriteLine();
+                outWriter.WriteLine("@@@@ reference table for \"" + parsedOptions.Input + "\" @@@@");
+                outWriter.WriteLine();
+                outWriter.WriteLine(".align 2");
+                outWriter.WriteLine();
+                outWriter.WriteLine(".global " + Path.GetFileNameWithoutExtension(parsedOptions.Input) + "_array");
+                outWriter.WriteLine(Path.GetFileNameWithoutExtension(parsedOptions.Input) + "_array:");
+                outWriter.WriteLine();
+                for (int i = 0; i < symList.Count; ++i)
+                {
+                    outWriter.WriteLine(".global " + symList[i] + "_ref");
+                    outWriter.WriteLine(symList[i] + "_ref:");
+                    outWriter.WriteLine(".word " + symList[i]);
                     outWriter.WriteLine();
-                    outWriter.WriteLine(".global " + symbol + "_ref");
-                    outWriter.WriteLine(symbol + "_ref:");
-                    outWriter.WriteLine(".word " + symbol);
                 }
                 outWriter.Flush();
                 outWriter.Close();
             }
         }
 
-        static void printHead(Options opt, StreamWriter write)
+        static void PrintHead(Options opt, StreamWriter write)
         {
             string fileLine = "result of file \"" + opt.Input + "\"";
             string tableLine = "using table \"" + opt.TablePath + "\"";
             string string2agbLine = "converted using string2agb";
             int maxLen = Math.Max(Math.Max(fileLine.Length, string2agbLine.Length), tableLine.Length);
-            maxLen += 20;
+            maxLen += 25;
             write.WriteLine(new string('@', maxLen));
             write.WriteLine("@" + new string(' ', maxLen - 2) + "@");
 
