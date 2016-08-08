@@ -8,7 +8,7 @@ namespace string2agb
 {
     class Program
     {
-        const string REGEX = @"^([\s\S]+)=(?:0[xX]){0,1}([0-9a-fA-F]{1,2})$";
+        const string REGEX = @"^([\s\S]+)=(?:0[1xX]){0,1}([0-9a-fA-F]{1,2})$";
         const string REGEX_CON = @"^([\s\S]+)=([\s\S]+)$";
         const string REGEX_HEX = @"^(?:0[xX]){0,1}([0-9a-fA-F]{1,2})$";
         static Dictionary<string, byte> _lookup = new Dictionary<string, byte>();
@@ -36,6 +36,10 @@ namespace string2agb
                         return;
                     }
                     _lookup.Add(m.Groups[1].ToString(), Convert.ToByte(m.Groups[2].ToString(), 16));
+                }
+                for (int i = 0; i < 256; ++i)
+                {
+                    _lookup.Add("\\h" + i.ToString("X2"), (byte)i);
                 }
                 string[] inputlines = File.ReadAllLines(parsedOptions.Input, System.Text.Encoding.Default);
                 StreamWriter outWriter = new StreamWriter(parsedOptions.Output, parsedOptions.Append);
