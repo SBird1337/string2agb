@@ -55,8 +55,44 @@ namespace string2agb
                 }
                 outWriter.WriteLine(".align 2");
                 List<string> symList = new List<string>();
+                int len = 0;
                 foreach (string line in inputlines)
                 {
+                    if (line.Equals(string.Empty))
+                        continue;
+                    if (line.StartsWith("@"))
+                    {
+                        if (line.StartsWith("@string_len="))
+                        {
+                            string arg = line.Remove(0, 12);
+                            if (!int.TryParse(arg, out len))
+                            {
+                                Console.Error.WriteLine("Error parsing " + line);
+                                return;
+                            }
+                        }
+                        else if (line.StartsWith("@byte "))
+                        {
+                            string arg = line.Remove(0, 6);
+                            outWriter.WriteLine(".byte " + arg);
+                        }
+                        else if (line.StartsWith("@hword "))
+                        {
+                            string arg = line.Remove(0, 7);
+                            outWriter.WriteLine(".hword " + arg);
+                        }
+                        else if (line.StartsWith("@word "))
+                        {
+                            string arg = line.Remove(0, 6);
+                            outWriter.WriteLine(".word " + arg);
+                        }
+                        else if (line.StartsWith("@include "))
+                        {
+                            string arg = line.Remove(0, 8);
+                            outWriter.WriteLine("#include " + arg);
+                        }
+                        continue;
+                    }
                     outWriter.WriteLine();
                     Match m = Regex.Match(line, REGEX_CON);
                     if (m == null)
@@ -91,6 +127,14 @@ namespace string2agb
                         Match hexMatch = Regex.Match(parsedOptions.Termination, REGEX_HEX);
                         if (hexMatch != null)
                             strings.Add("0x" + hexMatch.Groups[1]);
+                    }
+                    if (strings.Count > len && len != 0)
+                    {
+                        Console.Error.WriteLine("string \"" + line + "\" is too long for specified lenght of " + len.ToString());
+                    }
+                    while (len > 0 && strings.Count < len)
+                    {
+                        strings.Add("0x00");
                     }
                     //Create reference symbol for use with GCC compiler
                     outWriter.WriteLine(string.Join(",", strings));
