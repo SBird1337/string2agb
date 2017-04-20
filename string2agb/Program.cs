@@ -54,6 +54,9 @@ namespace string2agb
                     PrintHead(parsedOptions, outWriter);
                 }
                 outWriter.WriteLine(".align 2");
+                outWriter.WriteLine();
+                outWriter.WriteLine(".global " + Path.GetFileNameWithoutExtension(parsedOptions.Input));
+                outWriter.WriteLine(Path.GetFileNameWithoutExtension(parsedOptions.Input) + ":");
                 List<string> symList = new List<string>();
                 int len = 0;
                 foreach (string line in inputlines)
